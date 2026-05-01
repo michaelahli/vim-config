@@ -28,6 +28,11 @@ return {
               },
               schema = { model = { default = "databyte-m1" } },
             }),
+            tavily = adapters.extend("tavily", {
+              env = {
+                api_key = "TAVILY_API_KEY",
+              },
+            }),
           },
         },
         interactions = {
@@ -40,11 +45,6 @@ return {
                     "ddgr_search",
                     "web_search",
                   },
-                },
-              },
-              opts = {
-                default_tools = {
-                  "ddgr_search",
                 },
               },
               ddgr_search = {
@@ -155,11 +155,13 @@ return {
                 end,
               },
               web_search = {
-                description = "Search the internet using ddgr (DuckDuckGo CLI)",
-                callback = function()
-                  return require("codecompanion.config").strategies.chat.tools.ddgr_search.callback()
-                end,
                 opts = {
+                  adapter = "tavily",
+                  opts = {
+                    search_depth = "advanced",
+                    max_results = 5,
+                    include_answer = true,
+                  },
                   require_approval_before = true,
                 },
               },
