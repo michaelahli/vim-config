@@ -5,6 +5,7 @@
 --   :S3View s3://bucket/path/to/file
 --   :S3Upload s3://bucket/path/to/destination
 --   :S3Delete s3://bucket/path/to/file
+--   :S3Save [s3://bucket/path/to/file]
 --   :S3Browse [s3://bucket/prefix/]
 --
 -- Notes:
@@ -121,13 +122,20 @@ return {
         return result
       end
 
-      local function open_scratch_buffer(name, lines)
+      local function open_scratch_buffer(name, lines, opts)
+        opts = opts or {}
+
         vim.cmd("new")
         vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
         vim.bo.buftype = "nofile"
         vim.bo.bufhidden = "wipe"
         vim.bo.swapfile = false
+        vim.bo.modifiable = opts.modifiable ~= false
         vim.api.nvim_buf_set_name(0, name)
+
+        if opts.s3path then
+          vim.b.s3_path = opts.s3path
+        end
       end
 
       local function set_filetype_from_path(path)
@@ -227,9 +235,44 @@ return {
         local lines = vim.fn.readfile(tmpfile, "b")
         pcall(vim.fn.delete, tmpfile)
 
-        open_scratch_buffer(s3path, lines)
+        open_scratch_buffer(s3path, lines, { s3path = s3path })
         set_filetype_from_path(s3path)
+        vim.bo.modified = false
         notify("Loaded: " .. s3path)
+      end
+
+      local function save_s3_buffer(s3path)
+        s3path = normalize_s3_path(s3path or vim.b.s3_path)
+
+        if s3path == "s3://" then
+          notify("Usage: :S3Save s3://bucket/path/to/file", vim.log.levels.WARN)
+          return
+        end
+
+        local tmpfile = vim.fn.tempname()
+        local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+        vim.fn.writefile(lines, tmpfile, "b")
+
+        local cmd = table.concat({
+          aws_s3_cmd(),
+          "cp",
+          shellescape(tmpfile),
+          shellescape(s3path),
+        }, " ")
+
+        notify("Saving buffer to " .. s3path .. " ...")
+
+        local result = run_with_stderr_file(cmd)
+        pcall(vim.fn.delete, tmpfile)
+
+        if not result.ok then
+          notify("S3Save error for `" .. s3path .. "`: " .. result.stderr, vim.log.levels.ERROR)
+          return
+        end
+
+        vim.b.s3_path = s3path
+        vim.bo.modified = false
+        notify("Saved: " .. s3path)
       end
 
       local function upload_s3_file(s3path)
@@ -362,9 +405,29 @@ return {
                 browse_s3(parent_path)
               end
 
+              local function delete_selection()
+                local selection = action_state.get_selected_entry()
+
+                if not selection then
+                  return
+                end
+
+                local item = selection.value
+                if item.is_dir then
+                  notify("Delete folder/prefix is not supported from browse", vim.log.levels.WARN)
+                  return
+                end
+
+                actions.close(prompt_bufnr)
+                delete_s3_file(item.path)
+                browse_s3(path)
+              end
+
               actions.select_default:replace(open_selection)
               map("n", "<BS>", go_parent)
               map("i", "<C-h>", go_parent)
+              map("n", "dd", delete_selection)
+              map("i", "<C-d>", delete_selection)
 
               return true
             end,
@@ -379,6 +442,10 @@ return {
       vim.api.nvim_create_user_command("S3View", function(opts)
         view_s3_file(opts.args)
       end, { nargs = 1, desc = "View S3 file" })
+
+      vim.api.nvim_create_user_command("S3Save", function(opts)
+        save_s3_buffer(opts.args ~= "" and opts.args or nil)
+      end, { nargs = "?", desc = "Save current buffer to S3" })
 
       vim.api.nvim_create_user_command("S3Upload", function(opts)
         upload_s3_file(opts.args)
