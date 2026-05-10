@@ -17,7 +17,16 @@ return {
                 api_key = "SNIFOX_API_KEY",
                 chat_url = "/chat/completions",
               },
-              schema = { model = { default = "anthropic/claude-opus-4.6" } },
+              schema = { model = { default = "openai/gpt-5.3-codex" } },
+            }),
+            semutssh = adapters.extend("openai_compatible", {
+              name = "semutssh",
+              env = {
+                url = "https://ai.semutssh.com",
+                api_key = "SEMUTSSH_API_KEY",
+                chat_url = "/chat/completions",
+              },
+              schema = { model = { default = "claude-opus-4-6" } },
             }),
             databyte = adapters.extend("openai_compatible", {
               name = "databyte",
@@ -37,7 +46,7 @@ return {
         },
         interactions = {
           chat = {
-            adapter = "snifox",
+            adapter = "semutssh",
             tools = {
               groups = {
                 agent = {
@@ -167,7 +176,7 @@ return {
               },
             },
           },
-          inline = { adapter = "snifox" },
+          inline = { adapter = "semutssh" },
         },
       })
     end,
