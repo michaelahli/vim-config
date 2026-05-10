@@ -17,7 +17,7 @@ return {
                 api_key = "SNIFOX_API_KEY",
                 chat_url = "/chat/completions",
               },
-              schema = { model = { default = "openai/gpt-5.3-codex" } },
+              schema = { model = { default = "anthropic/claude-opus-4.6" } },
             }),
             semutssh = adapters.extend("openai_compatible", {
               name = "semutssh",
