@@ -53,9 +53,12 @@ return {
       {
         "<leader>gg",
         function()
-          Snacks.lazygit()
+          local file = vim.api.nvim_buf_get_name(0)
+          local dir = (file ~= "" and vim.fn.filereadable(file) == 1) and vim.fs.dirname(file) or vim.fn.getcwd()
+          local root = vim.fs.root(dir, ".git") or dir
+          Snacks.lazygit({ cwd = root })
         end,
-        desc = "Lazygit",
+        desc = "Lazygit (buffer dir)",
       },
       {
         "<leader>gb",
