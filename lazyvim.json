@@ -1,6 +1,5 @@
 {
   "extras": [
-    "lazyvim.plugins.extras.editor.neo-tree",
     "lazyvim.plugins.extras.formatting.prettier",
     "lazyvim.plugins.extras.lang.cmake",
     "lazyvim.plugins.extras.lang.dart",
@@ -29,3 +28,4 @@
   },
   "version": 8
 }
+

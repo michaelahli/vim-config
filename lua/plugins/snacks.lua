@@ -12,9 +12,22 @@ return {
 
       picker = {
         matcher = { frecency = true },
-        hidden = true,
-        ignored = false,
-        exclude = { ".git/", "node_modules/", "dist/", "build/", ".next/" },
+        exclude = { ".git/" },
+        sources = {
+          explorer = {
+            hidden = true,
+            ignored = true,
+            exclude = { ".git/" },
+          },
+          files = {
+            hidden = true,
+            ignored = false,
+          },
+          grep = {
+            hidden = true,
+            ignored = true,
+          },
+        },
       },
 
       dashboard = {
