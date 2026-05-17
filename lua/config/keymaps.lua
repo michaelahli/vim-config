@@ -18,3 +18,17 @@ vim.keymap.set("n", "<leader>dt", "<cmd>DBUIToggle<cr>", { desc = "Toggle Databa
 vim.keymap.set("n", "<leader>da", "<cmd>DBUIAddConnection<cr>", { desc = "Add Database Connection" })
 vim.keymap.set("n", "<leader>df", "<cmd>DBUIFindBuffer<cr>", { desc = "Find Database Buffer" })
 vim.keymap.set("n", "<leader>W", "<Plug>(DBUI_SaveQuery)")
+
+vim.keymap.set("n", "<leader>cb", function()
+  local clients = vim.lsp.get_clients({ bufnr = 0 })
+  if #clients == 0 then
+    vim.notify("No LSP clients attached to current buffer", vim.log.levels.WARN)
+    return
+  end
+  local names = {}
+  for _, client in ipairs(clients) do
+    names[#names + 1] = client.name
+  end
+  vim.cmd("lsp restart " .. table.concat(names, " "))
+  vim.notify("Restarted LSP: " .. table.concat(names, ", "))
+end, { desc = "Restart LSP (buffer)" })
