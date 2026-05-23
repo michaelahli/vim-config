@@ -7,6 +7,56 @@ return {
     },
     config = function()
       local adapters = require("codecompanion.adapters")
+
+      local function create_adapter_callbacks(adapter_name)
+        return {
+          on_stdout = function(data)
+            local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+            local log_msg = string.format(
+              "\n[%s] %s Response Data:\n%s\n",
+              os.date("%Y-%m-%d %H:%M:%S"),
+              adapter_name,
+              vim.inspect(data)
+            )
+            vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
+          end,
+          on_error = function(err)
+            local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+            local log_msg =
+              string.format("\n[%s] %s ERROR 500:\n%s\n", os.date("%Y-%m-%d %H:%M:%S"), adapter_name, vim.inspect(err))
+            vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
+
+            vim.notify(
+              string.format("[%s] Error 500 - Check :CodeCompanionLogs for details", adapter_name),
+              vim.log.levels.ERROR,
+              { title = "CodeCompanion" }
+            )
+          end,
+          on_request = function(request)
+            local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+
+            local body_content = request.body
+            if type(body_content) == "string" then
+              local ok, decoded = pcall(vim.json.decode, body_content)
+              if ok then
+                body_content = decoded
+              end
+            end
+
+            local log_msg = string.format(
+              "\n[%s] %s Request:\nURL: %s\nHeaders: %s\nBody: %s\nTools Count: %s\n",
+              os.date("%Y-%m-%d %H:%M:%S"),
+              adapter_name,
+              vim.inspect(request.url or "N/A"),
+              vim.inspect(request.headers or {}),
+              vim.inspect(body_content or {}),
+              body_content and body_content.tools and #body_content.tools or "0"
+            )
+            vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
+          end,
+        }
+      end
+
       require("codecompanion").setup({
         display = {
           action_palette = {
@@ -42,9 +92,7 @@ return {
                   default = "anthropic/claude-opus-4.6",
                   -- default = "openai/gpt-5.3-codex",
                 },
-                stream = {
-                  default = false,
-                },
+                stream = { default = true },
                 temperature = {
                   default = 0.7,
                 },
@@ -52,47 +100,7 @@ return {
                   default = 8192,
                 },
               },
-              callbacks = {
-                on_stdout = function(data)
-                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
-                  local log_msg =
-                    string.format("\n[%s] Snifox Response Data:\n%s\n", os.date("%Y-%m-%d %H:%M:%S"), vim.inspect(data))
-                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
-                end,
-                on_error = function(err)
-                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
-                  local log_msg =
-                    string.format("\n[%s] Snifox ERROR 500:\n%s\n", os.date("%Y-%m-%d %H:%M:%S"), vim.inspect(err))
-                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
-
-                  vim.notify(
-                    string.format("[Snifox] Error 500 - Check :CodeCompanionLogs for details"),
-                    vim.log.levels.ERROR,
-                    { title = "CodeCompanion" }
-                  )
-                end,
-                on_request = function(request)
-                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
-
-                  local body_content = request.body
-                  if type(body_content) == "string" then
-                    local ok, decoded = pcall(vim.json.decode, body_content)
-                    if ok then
-                      body_content = decoded
-                    end
-                  end
-
-                  local log_msg = string.format(
-                    "\n[%s] Snifox Request:\nURL: %s\nHeaders: %s\nBody: %s\nTools Count: %s\n",
-                    os.date("%Y-%m-%d %H:%M:%S"),
-                    vim.inspect(request.url or "N/A"),
-                    vim.inspect(request.headers or {}),
-                    vim.inspect(body_content or {}),
-                    body_content and body_content.tools and #body_content.tools or "0"
-                  )
-                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
-                end,
-              },
+              callbacks = create_adapter_callbacks("Snifox"),
             }),
             semutssh = adapters.extend("openai_compatible", {
               name = "semutssh",
@@ -103,54 +111,11 @@ return {
               },
               schema = {
                 model = { default = "claude-opus-4-6" },
-                stream = { default = false },
+                stream = { default = true },
                 temperature = { default = 0.7 },
                 max_tokens = { default = 8192 },
               },
-              callbacks = {
-                on_stdout = function(data)
-                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
-                  local log_msg = string.format(
-                    "\n[%s] Semutssh Response Data:\n%s\n",
-                    os.date("%Y-%m-%d %H:%M:%S"),
-                    vim.inspect(data)
-                  )
-                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
-                end,
-                on_error = function(err)
-                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
-                  local log_msg =
-                    string.format("\n[%s] Semutssh ERROR 500:\n%s\n", os.date("%Y-%m-%d %H:%M:%S"), vim.inspect(err))
-                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
-
-                  vim.notify(
-                    string.format("[Semutssh] Error 500 - Check :CodeCompanionLogs for details"),
-                    vim.log.levels.ERROR,
-                    { title = "CodeCompanion" }
-                  )
-                end,
-                on_request = function(request)
-                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
-
-                  local body_content = request.body
-                  if type(body_content) == "string" then
-                    local ok, decoded = pcall(vim.json.decode, body_content)
-                    if ok then
-                      body_content = decoded
-                    end
-                  end
-
-                  local log_msg = string.format(
-                    "\n[%s] Semutssh Request:\nURL: %s\nHeaders: %s\nBody: %s\nTools Count: %s\n",
-                    os.date("%Y-%m-%d %H:%M:%S"),
-                    vim.inspect(request.url or "N/A"),
-                    vim.inspect(request.headers or {}),
-                    vim.inspect(body_content or {}),
-                    body_content and body_content.tools and #body_content.tools or "0"
-                  )
-                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
-                end,
-              },
+              callbacks = create_adapter_callbacks("Semutssh"),
             }),
             databyte = adapters.extend("openai_compatible", {
               name = "databyte",
@@ -161,54 +126,9 @@ return {
               },
               schema = {
                 model = { default = "databyte-m1" },
-                stream = { default = false }, -- Disable streaming when using tools
-                temperature = { default = 0.7 },
-                max_tokens = { default = 8192 },
+                stream = { default = true },
               },
-              callbacks = {
-                on_stdout = function(data)
-                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
-                  local log_msg = string.format(
-                    "\n[%s] Databyte Response Data:\n%s\n",
-                    os.date("%Y-%m-%d %H:%M:%S"),
-                    vim.inspect(data)
-                  )
-                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
-                end,
-                on_error = function(err)
-                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
-                  local log_msg =
-                    string.format("\n[%s] Databyte ERROR 500:\n%s\n", os.date("%Y-%m-%d %H:%M:%S"), vim.inspect(err))
-                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
-
-                  vim.notify(
-                    string.format("[Databyte] Error 500 - Check :CodeCompanionLogs for details"),
-                    vim.log.levels.ERROR,
-                    { title = "CodeCompanion" }
-                  )
-                end,
-                on_request = function(request)
-                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
-
-                  local body_content = request.body
-                  if type(body_content) == "string" then
-                    local ok, decoded = pcall(vim.json.decode, body_content)
-                    if ok then
-                      body_content = decoded
-                    end
-                  end
-
-                  local log_msg = string.format(
-                    "\n[%s] Databyte Request:\nURL: %s\nHeaders: %s\nBody: %s\nTools Count: %s\n",
-                    os.date("%Y-%m-%d %H:%M:%S"),
-                    vim.inspect(request.url or "N/A"),
-                    vim.inspect(request.headers or {}),
-                    vim.inspect(body_content or {}),
-                    body_content and body_content.tools and #body_content.tools or "0"
-                  )
-                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
-                end,
-              },
+              callbacks = create_adapter_callbacks("Databyte"),
             }),
             tavily = adapters.extend("tavily", {
               env = {
