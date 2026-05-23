@@ -8,6 +8,26 @@ return {
     config = function()
       local adapters = require("codecompanion.adapters")
       require("codecompanion").setup({
+        display = {
+          action_palette = {
+            width = 95,
+            height = 10,
+          },
+          chat = {
+            window = {
+              layout = "vertical",
+              width = 0.45,
+            },
+            show_settings = false,
+            show_token_count = true,
+          },
+        },
+        log_level = "DEBUG",
+        opts = {
+          log_level = "DEBUG",
+          send_code = true,
+          use_default_actions = true,
+        },
         adapters = {
           http = {
             snifox = adapters.extend("openai_compatible", {
@@ -17,7 +37,37 @@ return {
                 api_key = "SNIFOX_API_KEY",
                 chat_url = "/chat/completions",
               },
-              schema = { model = { default = "anthropic/claude-opus-4.6" } },
+              schema = {
+                model = {
+                  default = "anthropic/claude-opus-4.6",
+                  -- default = "openai/gpt-5.3-codex",
+                },
+                stream = { default = true },
+              },
+              callbacks = {
+                on_stdout = function(data)
+                  vim.notify(string.format("[Snifox] Receiving data: %s", vim.inspect(data)), vim.log.levels.DEBUG)
+                end,
+                on_error = function(err)
+                  vim.notify(
+                    string.format("[Snifox API Error] %s", vim.inspect(err)),
+                    vim.log.levels.ERROR,
+                    { title = "CodeCompanion" }
+                  )
+                  vim.api.nvim_err_writeln("Snifox API failed: " .. vim.inspect(err))
+                end,
+                on_request = function(request)
+                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+                  local log_msg = string.format(
+                    "\n[%s] Snifox Request:\nURL: %s\nHeaders: %s\nBody: %s\n",
+                    os.date("%Y-%m-%d %H:%M:%S"),
+                    vim.inspect(request.url or "N/A"),
+                    vim.inspect(request.headers or {}),
+                    vim.inspect(request.body or {})
+                  )
+                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
+                end,
+              },
             }),
             semutssh = adapters.extend("openai_compatible", {
               name = "semutssh",
@@ -26,7 +76,34 @@ return {
                 api_key = "SEMUTSSH_API_KEY",
                 chat_url = "/chat/completions",
               },
-              schema = { model = { default = "claude-opus-4-6" } },
+              schema = {
+                model = { default = "claude-opus-4-6" },
+                stream = { default = true },
+              },
+              callbacks = {
+                on_stdout = function(data)
+                  vim.notify(string.format("[Semutssh] Receiving data: %s", vim.inspect(data)), vim.log.levels.DEBUG)
+                end,
+                on_error = function(err)
+                  vim.notify(
+                    string.format("[Semutssh API Error] %s", vim.inspect(err)),
+                    vim.log.levels.ERROR,
+                    { title = "CodeCompanion" }
+                  )
+                  vim.api.nvim_err_writeln("Semutssh API failed: " .. vim.inspect(err))
+                end,
+                on_request = function(request)
+                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+                  local log_msg = string.format(
+                    "\n[%s] Semutssh Request:\nURL: %s\nHeaders: %s\nBody: %s\n",
+                    os.date("%Y-%m-%d %H:%M:%S"),
+                    vim.inspect(request.url or "N/A"),
+                    vim.inspect(request.headers or {}),
+                    vim.inspect(request.body or {})
+                  )
+                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
+                end,
+              },
             }),
             databyte = adapters.extend("openai_compatible", {
               name = "databyte",
@@ -35,7 +112,34 @@ return {
                 api_key = "DATABYTE_API_KEY",
                 chat_url = "/chat/completions",
               },
-              schema = { model = { default = "databyte-m1" } },
+              schema = {
+                model = { default = "databyte-m1" },
+                stream = { default = true },
+              },
+              callbacks = {
+                on_stdout = function(data)
+                  vim.notify(string.format("[Databyte] Receiving data: %s", vim.inspect(data)), vim.log.levels.DEBUG)
+                end,
+                on_error = function(err)
+                  vim.notify(
+                    string.format("[Databyte API Error] %s", vim.inspect(err)),
+                    vim.log.levels.ERROR,
+                    { title = "CodeCompanion" }
+                  )
+                  vim.api.nvim_err_writeln("Databyte API failed: " .. vim.inspect(err))
+                end,
+                on_request = function(request)
+                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+                  local log_msg = string.format(
+                    "\n[%s] Databyte Request:\nURL: %s\nHeaders: %s\nBody: %s\n",
+                    os.date("%Y-%m-%d %H:%M:%S"),
+                    vim.inspect(request.url or "N/A"),
+                    vim.inspect(request.headers or {}),
+                    vim.inspect(request.body or {})
+                  )
+                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
+                end,
+              },
             }),
             tavily = adapters.extend("tavily", {
               env = {
@@ -46,7 +150,7 @@ return {
         },
         interactions = {
           chat = {
-            adapter = "semutssh",
+            adapter = "snifox",
             tools = {
               groups = {
                 agent = {
@@ -176,9 +280,30 @@ return {
               },
             },
           },
-          inline = { adapter = "semutssh" },
+          inline = { adapter = "snifox" },
         },
       })
+
+      -- Command untuk membuka log file CodeCompanion
+      vim.api.nvim_create_user_command("CodeCompanionLogs", function()
+        local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+        if vim.fn.filereadable(log_path) == 1 then
+          vim.cmd("tabnew " .. log_path)
+          vim.cmd("setlocal autoread")
+          vim.notify("Opened CodeCompanion logs", vim.log.levels.INFO)
+        else
+          vim.notify("Log file not found: " .. log_path, vim.log.levels.WARN)
+        end
+      end, { desc = "Open CodeCompanion log file" })
+
+      -- Command untuk clear log file
+      vim.api.nvim_create_user_command("CodeCompanionLogsClear", function()
+        local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+        if vim.fn.filereadable(log_path) == 1 then
+          vim.fn.writefile({}, log_path)
+          vim.notify("Cleared CodeCompanion logs", vim.log.levels.INFO)
+        end
+      end, { desc = "Clear CodeCompanion log file" })
     end,
   },
 }
