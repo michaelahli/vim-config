@@ -43,7 +43,7 @@ return {
                   -- default = "openai/gpt-5.3-codex",
                 },
                 stream = {
-                  default = true,
+                  default = false,
                 },
                 temperature = {
                   default = 0.7,
@@ -51,48 +51,6 @@ return {
                 max_tokens = {
                   default = 8192,
                 },
-              },
-              handlers = {
-                chat_output = function(self, data, tools)
-                  -- Custom handler to fix tool call arguments concatenation bug
-                  local openai = require("codecompanion.adapters.http.openai")
-                  local result = openai.handlers.chat_output(self, data, tools)
-
-                  -- Validate and fix tool arguments after parsing
-                  if tools and #tools > 0 then
-                    for _, tool in ipairs(tools) do
-                      if tool["function"] and tool["function"]["arguments"] then
-                        local args = tool["function"]["arguments"]
-                        -- Check if arguments contain multiple JSON objects concatenated
-                        if type(args) == "string" and args:match("}%s*{") then
-                          local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
-                          local log_msg = string.format(
-                            "\n[%s] WARNING: Detected concatenated JSON in tool arguments!\nTool: %s\nArguments: %s\n",
-                            os.date("%Y-%m-%d %H:%M:%S"),
-                            tool["function"]["name"] or "unknown",
-                            args
-                          )
-                          vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
-
-                          -- Try to extract only the first valid JSON object
-                          local first_json = args:match("^(%b{})")
-                          if first_json then
-                            tool["function"]["arguments"] = first_json
-                            vim.notify(
-                              string.format(
-                                "[Snifox] Fixed concatenated tool arguments for %s",
-                                tool["function"]["name"]
-                              ),
-                              vim.log.levels.WARN
-                            )
-                          end
-                        end
-                      end
-                    end
-                  end
-
-                  return result
-                end,
               },
               callbacks = {
                 on_stdout = function(data)
@@ -145,47 +103,9 @@ return {
               },
               schema = {
                 model = { default = "claude-opus-4-6" },
-                stream = { default = true },
+                stream = { default = false },
                 temperature = { default = 0.7 },
                 max_tokens = { default = 8192 },
-              },
-              handlers = {
-                chat_output = function(self, data, tools)
-                  local openai = require("codecompanion.adapters.http.openai")
-                  local result = openai.handlers.chat_output(self, data, tools)
-
-                  if tools and #tools > 0 then
-                    for _, tool in ipairs(tools) do
-                      if tool["function"] and tool["function"]["arguments"] then
-                        local args = tool["function"]["arguments"]
-                        if type(args) == "string" and args:match("}%s*{") then
-                          local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
-                          local log_msg = string.format(
-                            "\n[%s] WARNING: Detected concatenated JSON in tool arguments!\nTool: %s\nArguments: %s\n",
-                            os.date("%Y-%m-%d %H:%M:%S"),
-                            tool["function"]["name"] or "unknown",
-                            args
-                          )
-                          vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
-
-                          local first_json = args:match("^(%b{})")
-                          if first_json then
-                            tool["function"]["arguments"] = first_json
-                            vim.notify(
-                              string.format(
-                                "[Semutssh] Fixed concatenated tool arguments for %s",
-                                tool["function"]["name"]
-                              ),
-                              vim.log.levels.WARN
-                            )
-                          end
-                        end
-                      end
-                    end
-                  end
-
-                  return result
-                end,
               },
               callbacks = {
                 on_stdout = function(data)
@@ -244,44 +164,6 @@ return {
                 stream = { default = false }, -- Disable streaming when using tools
                 temperature = { default = 0.7 },
                 max_tokens = { default = 8192 },
-              },
-              handlers = {
-                chat_output = function(self, data, tools)
-                  local openai = require("codecompanion.adapters.http.openai")
-                  local result = openai.handlers.chat_output(self, data, tools)
-
-                  if tools and #tools > 0 then
-                    for _, tool in ipairs(tools) do
-                      if tool["function"] and tool["function"]["arguments"] then
-                        local args = tool["function"]["arguments"]
-                        if type(args) == "string" and args:match("}%s*{") then
-                          local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
-                          local log_msg = string.format(
-                            "\n[%s] WARNING: Detected concatenated JSON in tool arguments!\nTool: %s\nArguments: %s\n",
-                            os.date("%Y-%m-%d %H:%M:%S"),
-                            tool["function"]["name"] or "unknown",
-                            args
-                          )
-                          vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
-
-                          local first_json = args:match("^(%b{})")
-                          if first_json then
-                            tool["function"]["arguments"] = first_json
-                            vim.notify(
-                              string.format(
-                                "[Databyte] Fixed concatenated tool arguments for %s",
-                                tool["function"]["name"]
-                              ),
-                              vim.log.levels.WARN
-                            )
-                          end
-                        end
-                      end
-                    end
-                  end
-
-                  return result
-                end,
               },
               callbacks = {
                 on_stdout = function(data)
@@ -496,27 +378,6 @@ return {
           inline = { adapter = "snifox" },
         },
       })
-
-      -- Command untuk membuka log file CodeCompanion
-      vim.api.nvim_create_user_command("CodeCompanionLogs", function()
-        local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
-        if vim.fn.filereadable(log_path) == 1 then
-          vim.cmd("tabnew " .. log_path)
-          vim.cmd("setlocal autoread")
-          vim.notify("Opened CodeCompanion logs", vim.log.levels.INFO)
-        else
-          vim.notify("Log file not found: " .. log_path, vim.log.levels.WARN)
-        end
-      end, { desc = "Open CodeCompanion log file" })
-
-      -- Command untuk clear log file
-      vim.api.nvim_create_user_command("CodeCompanionLogsClear", function()
-        local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
-        if vim.fn.filereadable(log_path) == 1 then
-          vim.fn.writefile({}, log_path)
-          vim.notify("Cleared CodeCompanion logs", vim.log.levels.INFO)
-        end
-      end, { desc = "Clear CodeCompanion log file" })
     end,
   },
 }
