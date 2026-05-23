@@ -86,6 +86,7 @@ return {
                 url = "https://core.snifoxai.com/v1",
                 api_key = "SNIFOX_API_KEY",
                 chat_url = "/chat/completions",
+                models_endpoint = "/models",
               },
               schema = {
                 model = {
@@ -123,6 +124,7 @@ return {
                 url = "https://ai.databyte.co.id/v1",
                 api_key = "DATABYTE_API_KEY",
                 chat_url = "/chat/completions",
+                models_endpoint = "/models",
               },
               schema = {
                 model = { default = "databyte-m1" },
