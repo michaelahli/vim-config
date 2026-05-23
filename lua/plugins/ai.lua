@@ -42,7 +42,15 @@ return {
                   default = "anthropic/claude-opus-4.6",
                   -- default = "openai/gpt-5.3-codex",
                 },
-                stream = { default = true },
+                stream = {
+                  default = true,
+                },
+                temperature = {
+                  default = 0.7,
+                },
+                max_tokens = {
+                  default = 8192,
+                },
               },
               handlers = {
                 chat_output = function(self, data, tools)
@@ -88,24 +96,41 @@ return {
               },
               callbacks = {
                 on_stdout = function(data)
-                  vim.notify(string.format("[Snifox] Receiving data: %s", vim.inspect(data)), vim.log.levels.DEBUG)
+                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+                  local log_msg =
+                    string.format("\n[%s] Snifox Response Data:\n%s\n", os.date("%Y-%m-%d %H:%M:%S"), vim.inspect(data))
+                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
                 end,
                 on_error = function(err)
+                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+                  local log_msg =
+                    string.format("\n[%s] Snifox ERROR 500:\n%s\n", os.date("%Y-%m-%d %H:%M:%S"), vim.inspect(err))
+                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
+
                   vim.notify(
-                    string.format("[Snifox API Error] %s", vim.inspect(err)),
+                    string.format("[Snifox] Error 500 - Check :CodeCompanionLogs for details"),
                     vim.log.levels.ERROR,
                     { title = "CodeCompanion" }
                   )
-                  vim.api.nvim_err_writeln("Snifox API failed: " .. vim.inspect(err))
                 end,
                 on_request = function(request)
                   local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+
+                  local body_content = request.body
+                  if type(body_content) == "string" then
+                    local ok, decoded = pcall(vim.json.decode, body_content)
+                    if ok then
+                      body_content = decoded
+                    end
+                  end
+
                   local log_msg = string.format(
-                    "\n[%s] Snifox Request:\nURL: %s\nHeaders: %s\nBody: %s\n",
+                    "\n[%s] Snifox Request:\nURL: %s\nHeaders: %s\nBody: %s\nTools Count: %s\n",
                     os.date("%Y-%m-%d %H:%M:%S"),
                     vim.inspect(request.url or "N/A"),
                     vim.inspect(request.headers or {}),
-                    vim.inspect(request.body or {})
+                    vim.inspect(body_content or {}),
+                    body_content and body_content.tools and #body_content.tools or "0"
                   )
                   vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
                 end,
@@ -121,19 +146,18 @@ return {
               schema = {
                 model = { default = "claude-opus-4-6" },
                 stream = { default = true },
+                temperature = { default = 0.7 },
+                max_tokens = { default = 8192 },
               },
               handlers = {
                 chat_output = function(self, data, tools)
-                  -- Custom handler to fix tool call arguments concatenation bug
                   local openai = require("codecompanion.adapters.http.openai")
                   local result = openai.handlers.chat_output(self, data, tools)
 
-                  -- Validate and fix tool arguments after parsing
                   if tools and #tools > 0 then
                     for _, tool in ipairs(tools) do
                       if tool["function"] and tool["function"]["arguments"] then
                         local args = tool["function"]["arguments"]
-                        -- Check if arguments contain multiple JSON objects concatenated
                         if type(args) == "string" and args:match("}%s*{") then
                           local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
                           local log_msg = string.format(
@@ -144,7 +168,6 @@ return {
                           )
                           vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
 
-                          -- Try to extract only the first valid JSON object
                           local first_json = args:match("^(%b{})")
                           if first_json then
                             tool["function"]["arguments"] = first_json
@@ -166,24 +189,44 @@ return {
               },
               callbacks = {
                 on_stdout = function(data)
-                  vim.notify(string.format("[Semutssh] Receiving data: %s", vim.inspect(data)), vim.log.levels.DEBUG)
+                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+                  local log_msg = string.format(
+                    "\n[%s] Semutssh Response Data:\n%s\n",
+                    os.date("%Y-%m-%d %H:%M:%S"),
+                    vim.inspect(data)
+                  )
+                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
                 end,
                 on_error = function(err)
+                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+                  local log_msg =
+                    string.format("\n[%s] Semutssh ERROR 500:\n%s\n", os.date("%Y-%m-%d %H:%M:%S"), vim.inspect(err))
+                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
+
                   vim.notify(
-                    string.format("[Semutssh API Error] %s", vim.inspect(err)),
+                    string.format("[Semutssh] Error 500 - Check :CodeCompanionLogs for details"),
                     vim.log.levels.ERROR,
                     { title = "CodeCompanion" }
                   )
-                  vim.api.nvim_err_writeln("Semutssh API failed: " .. vim.inspect(err))
                 end,
                 on_request = function(request)
                   local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+
+                  local body_content = request.body
+                  if type(body_content) == "string" then
+                    local ok, decoded = pcall(vim.json.decode, body_content)
+                    if ok then
+                      body_content = decoded
+                    end
+                  end
+
                   local log_msg = string.format(
-                    "\n[%s] Semutssh Request:\nURL: %s\nHeaders: %s\nBody: %s\n",
+                    "\n[%s] Semutssh Request:\nURL: %s\nHeaders: %s\nBody: %s\nTools Count: %s\n",
                     os.date("%Y-%m-%d %H:%M:%S"),
                     vim.inspect(request.url or "N/A"),
                     vim.inspect(request.headers or {}),
-                    vim.inspect(request.body or {})
+                    vim.inspect(body_content or {}),
+                    body_content and body_content.tools and #body_content.tools or "0"
                   )
                   vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
                 end,
@@ -198,20 +241,19 @@ return {
               },
               schema = {
                 model = { default = "databyte-m1" },
-                stream = { default = true },
+                stream = { default = false }, -- Disable streaming when using tools
+                temperature = { default = 0.7 },
+                max_tokens = { default = 8192 },
               },
               handlers = {
                 chat_output = function(self, data, tools)
-                  -- Custom handler to fix tool call arguments concatenation bug
                   local openai = require("codecompanion.adapters.http.openai")
                   local result = openai.handlers.chat_output(self, data, tools)
 
-                  -- Validate and fix tool arguments after parsing
                   if tools and #tools > 0 then
                     for _, tool in ipairs(tools) do
                       if tool["function"] and tool["function"]["arguments"] then
                         local args = tool["function"]["arguments"]
-                        -- Check if arguments contain multiple JSON objects concatenated
                         if type(args) == "string" and args:match("}%s*{") then
                           local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
                           local log_msg = string.format(
@@ -222,7 +264,6 @@ return {
                           )
                           vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
 
-                          -- Try to extract only the first valid JSON object
                           local first_json = args:match("^(%b{})")
                           if first_json then
                             tool["function"]["arguments"] = first_json
@@ -244,24 +285,44 @@ return {
               },
               callbacks = {
                 on_stdout = function(data)
-                  vim.notify(string.format("[Databyte] Receiving data: %s", vim.inspect(data)), vim.log.levels.DEBUG)
+                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+                  local log_msg = string.format(
+                    "\n[%s] Databyte Response Data:\n%s\n",
+                    os.date("%Y-%m-%d %H:%M:%S"),
+                    vim.inspect(data)
+                  )
+                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
                 end,
                 on_error = function(err)
+                  local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+                  local log_msg =
+                    string.format("\n[%s] Databyte ERROR 500:\n%s\n", os.date("%Y-%m-%d %H:%M:%S"), vim.inspect(err))
+                  vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
+
                   vim.notify(
-                    string.format("[Databyte API Error] %s", vim.inspect(err)),
+                    string.format("[Databyte] Error 500 - Check :CodeCompanionLogs for details"),
                     vim.log.levels.ERROR,
                     { title = "CodeCompanion" }
                   )
-                  vim.api.nvim_err_writeln("Databyte API failed: " .. vim.inspect(err))
                 end,
                 on_request = function(request)
                   local log_path = vim.fn.stdpath("log") .. "/codecompanion.log"
+
+                  local body_content = request.body
+                  if type(body_content) == "string" then
+                    local ok, decoded = pcall(vim.json.decode, body_content)
+                    if ok then
+                      body_content = decoded
+                    end
+                  end
+
                   local log_msg = string.format(
-                    "\n[%s] Databyte Request:\nURL: %s\nHeaders: %s\nBody: %s\n",
+                    "\n[%s] Databyte Request:\nURL: %s\nHeaders: %s\nBody: %s\nTools Count: %s\n",
                     os.date("%Y-%m-%d %H:%M:%S"),
                     vim.inspect(request.url or "N/A"),
                     vim.inspect(request.headers or {}),
-                    vim.inspect(request.body or {})
+                    vim.inspect(body_content or {}),
+                    body_content and body_content.tools and #body_content.tools or "0"
                   )
                   vim.fn.writefile(vim.split(log_msg, "\n"), log_path, "a")
                 end,
@@ -279,10 +340,36 @@ return {
             adapter = "snifox",
             tools = {
               groups = {
-                agent = {
+                agent_ddgr = {
                   tools = {
                     "ddgr_search",
+                    -- "web_search",
+                    "ask_questions",
+                    "create_file",
+                    "delete_file",
+                    "file_search",
+                    "get_changed_files",
+                    "get_diagnostics",
+                    "grep_search",
+                    "insert_edit_into_file",
+                    "read_file",
+                    "run_command",
+                  },
+                },
+                agent_web = {
+                  tools = {
+                    -- "ddgr_search",
                     "web_search",
+                    "ask_questions",
+                    "create_file",
+                    "delete_file",
+                    "file_search",
+                    "get_changed_files",
+                    "get_diagnostics",
+                    "grep_search",
+                    "insert_edit_into_file",
+                    "read_file",
+                    "run_command",
                   },
                 },
               },
