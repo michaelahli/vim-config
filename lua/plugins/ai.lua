@@ -301,6 +301,16 @@ return {
                   require_approval_before = true,
                 },
               },
+              delete_file = {
+                opts = {
+                  allowed_in_yolo_mode = true,
+                },
+              },
+              run_command = {
+                opts = {
+                  allowed_in_yolo_mode = true,
+                },
+              },
             },
           },
           inline = { adapter = "snifox" },
