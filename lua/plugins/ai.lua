@@ -82,6 +82,9 @@ return {
           http = {
             snifox = adapters.extend("openai_compatible", {
               name = "snifox",
+              opts = {
+                stream = false,
+              },
               env = {
                 url = "https://core.snifoxai.com/v1",
                 api_key = "SNIFOX_API_KEY",
@@ -93,7 +96,7 @@ return {
                   default = "anthropic/claude-opus-4.6",
                   -- default = "openai/gpt-5.3-codex",
                 },
-                stream = { default = true },
+                stream = { default = false },
                 temperature = {
                   default = 0.7,
                 },
@@ -120,6 +123,9 @@ return {
             }),
             databyte = adapters.extend("openai_compatible", {
               name = "databyte",
+              opts = {
+                stream = false,
+              },
               env = {
                 url = "https://ai.databyte.co.id/v1",
                 api_key = "DATABYTE_API_KEY",
@@ -128,7 +134,7 @@ return {
               },
               schema = {
                 model = { default = "databyte-m1" },
-                stream = { default = true },
+                stream = { default = false },
               },
               callbacks = create_adapter_callbacks("Databyte"),
             }),
