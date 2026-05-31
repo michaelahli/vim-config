@@ -121,6 +121,21 @@ return {
               },
               callbacks = create_adapter_callbacks("Semutssh"),
             }),
+            semutsshbackup = adapters.extend("openai_compatible", {
+              name = "semutsshbackup",
+              env = {
+                url = "https://ai.semutssh.com",
+                api_key = "SEMUTSSH_BACKUP_API_KEY",
+                chat_url = "/chat/completions",
+              },
+              schema = {
+                model = { default = "claude-opus-4-6" },
+                stream = { default = true },
+                temperature = { default = 0.7 },
+                max_tokens = { default = 8192 },
+              },
+              callbacks = create_adapter_callbacks("Semutssh"),
+            }),
             databyte = adapters.extend("openai_compatible", {
               name = "databyte",
               opts = {
