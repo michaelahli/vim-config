@@ -106,26 +106,78 @@ return {
               },
               callbacks = create_adapter_callbacks("Snifox"),
             }),
+            groq = adapters.extend("openai_compatible", {
+              name = "groq",
+              env = {
+                url = "https://api.groq.com/openai/v1",
+                api_key = "GROQ_API_KEY",
+                chat_url = "/chat/completions",
+                models_endpoint = "/models",
+              },
+              schema = {
+                model = { default = "kimi-k2-instruct" },
+                stream = { default = true },
+              },
+              callbacks = create_adapter_callbacks("Groq"),
+            }),
+            openrouter = adapters.extend("openai_compatible", {
+              name = "openrouter",
+              env = {
+                url = "https://openrouter.ai/api/v1",
+                api_key = "OPENROUTER_API_KEY",
+                chat_url = "/chat/completions",
+                models_endpoint = "/models",
+              },
+              schema = {
+                model = { default = "deepseek-chat" },
+                stream = { default = true },
+              },
+              callbacks = create_adapter_callbacks("Openrouter"),
+            }),
+            huggingface = adapters.extend("huggingface", {
+              name = "huggingface",
+              env = {
+                url = "https://router.huggingface.co/v1",
+                api_key = "HUGGINGFACE_API_KEY",
+              },
+              schema = {
+                model = { default = "Qwen/Qwen2.5-7B-Instruct" },
+                stream = { default = true },
+              },
+              callbacks = create_adapter_callbacks("Openrouter"),
+            }),
+            cerebras = adapters.extend("openai_compatible", {
+              name = "cerebras",
+              env = {
+                url = "https://api.cerebras.ai/v1",
+                api_key = "CEREBRAS_API_KEY",
+                chat_url = "/chat/completions",
+                models_endpoint = "/models",
+              },
+              schema = {
+                model = { default = "zai-glm-4.7" },
+                stream = { default = true },
+              },
+              callbacks = create_adapter_callbacks("Openrouter"),
+            }),
+            nvidia = adapters.extend("openai_compatible", {
+              name = "nvidia",
+              env = {
+                url = "https://integrate.api.nvidia.com",
+                api_key = "NVIDIA_API_KEY",
+              },
+              schema = {
+                model = { default = "z-ai-glm-5-1" },
+                stream = { default = true },
+              },
+              callbacks = create_adapter_callbacks("Openrouter"),
+            }),
             semutssh = adapters.extend("openai_compatible", {
               name = "semutssh",
               env = {
                 url = "https://ai.semutssh.com",
                 api_key = "SEMUTSSH_API_KEY",
-                chat_url = "/chat/completions",
-              },
-              schema = {
-                model = { default = "claude-opus-4-6" },
-                stream = { default = true },
-                temperature = { default = 0.7 },
-                max_tokens = { default = 8192 },
-              },
-              callbacks = create_adapter_callbacks("Semutssh"),
-            }),
-            semutsshbackup = adapters.extend("openai_compatible", {
-              name = "semutsshbackup",
-              env = {
-                url = "https://ai.semutssh.com",
-                api_key = "SEMUTSSH_BACKUP_API_KEY",
+                -- api_key = "SEMUTSSH_BACKUP_API_KEY",
                 chat_url = "/chat/completions",
               },
               schema = {
