@@ -93,7 +93,7 @@ return {
               },
               schema = {
                 model = {
-                  default = "anthropic/claude-opus-4.6",
+                  default = "anthropic/claude-opus-4.7",
                   -- default = "openai/gpt-5.3-codex",
                 },
                 stream = { default = false },
