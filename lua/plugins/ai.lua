@@ -87,7 +87,8 @@ return {
               },
               env = {
                 url = "https://core.snifoxai.com/v1",
-                api_key = "SNIFOX_API_KEY",
+                -- api_key = "SNIFOX_API_KEY",
+                api_key = "SNIFOX_BACKUP_API_KEY",
                 chat_url = "/chat/completions",
                 models_endpoint = "/models",
               },
